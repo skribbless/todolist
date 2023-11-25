@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Crud To-Do List</title>
+    <style>
+        body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-image: url('bg1.jpg');
+        background-size: cover;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: top;
+        height: 50vh;
+
+        }
+
+        #todo-container {
+            width: 360px;
+            background: rgb(255, 255, 255);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #todo-header {
+            background: rgba(248, 38, 1, 0.884);
+            color: green;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        #add-task {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        #add-task input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            box-sizing: border-box;
+        }
+
+        #add-task button {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        #add-task button:hover {
+            background-color: #218838;
+        }
+
+        #task-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #dee2e6;
+            transition: background-color 0.3s;
+        }
+
+        .task-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .task-text {
+            flex-grow: 1;
+            margin-right: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .task-buttons button {
+            background-color: #3700ffda;
+            color: #fff;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .task-buttons button:hover {
+            background-color: #00fc2a;
+        }
+    </style>
+</head>
+<body>
+
+<div id="todo-container">
+    <div id="todo-header">To-Do List</div>
+    
+    <div id="add-task">
+        <input type="text" id="task" placeholder="New task">
+        <button onclick="addTask()">Add</button>
+    </div>
+
+    <ul id="task-list"></ul>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadTasks();
+    });
+
+    function addTask() {
+        var taskInput = document.getElementById('task');
+
+        if (taskInput.value.trim() !== '') {
+            var task = {
+                id: new Date().getTime(),
+                text: taskInput.value.trim(),
+                completed: false
+            };
+
+            var tasks = getTasks();
+            tasks.push(task);
+
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            taskInput.value = '';
+
+            renderTasks();
+        }
+    }
+
+    function removeTask(id) {
+        var tasks = getTasks();
+
+        tasks = tasks.filter(function (task) {
+            return task.id !== id;
+        });
+
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+
+        renderTasks();
+    }
+
+    function editTask(id) {
+        var tasks = getTasks();
+
+        var taskToEdit = tasks.find(function (task) {
+            return task.id === id;
+        });
+
+        // Check if the task is completed before allowing editing
+        if (!taskToEdit.completed) {
+            var taskTextElement = document.getElementById('task-text-' + id);
+
+            taskTextElement.contentEditable = true;
+            taskTextElement.focus();
+
+            taskTextElement.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    taskTextElement.blur();
+                }
+            });
+
+            taskTextElement.addEventListener('blur', function () {
+                taskToEdit.text = taskTextElement.innerText;
+                taskTextElement.contentEditable = false;
+
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                renderTasks();
+            });
+        }
+    }
+
+    function toggleTaskStatus(id) {
+        var tasks = getTasks();
+
+        var taskToUpdate = tasks.find(function (task) {
+            return task.id === id;
+        });
+
+        taskToUpdate.completed = !taskToUpdate.completed;
+
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+
+        renderTasks();
+    }
+
+    function renderTasks() {
+        var taskList = document.getElementById('task-list');
+        taskList.innerHTML = '';
+
+        var tasks = getTasks();
+
+        tasks.forEach(function (task) {
+            var listItem = document.createElement('li');
+            listItem.classList.add('task-item');
+
+            var taskText = document.createElement('div');
+            taskText.classList.add('task-text');
+            taskText.innerText = task.text;
+            taskText.id = 'task-text-' + task.id;
+
+            // Check if the task is completed
+            if (task.completed) {
+                listItem.classList.add('completed');
+            } else {
+                // Add click event for editing only if the task is not completed
+                taskText.addEventListener('click', function () {
+                    editTask(task.id);
+                });
+            }
+
+            listItem.appendChild(taskText);
+
+            var taskButtons = document.createElement('div');
+            taskButtons.classList.add('task-buttons');
+
+            var editButton = document.createElement('button');
+            editButton.innerText = 'Edit';
+            editButton.onclick = function () {
+                editTask(task.id);
+            };
+            taskButtons.appendChild(editButton);
+
+            var saveButton = document.createElement('button');
+            saveButton.innerText = 'Save';
+            saveButton.onclick = function () {
+                saveTask(task.id);
+            };
+            taskButtons.appendChild(saveButton);
+
+            var deleteButton = document.createElement('button');
+            deleteButton.innerText = 'Delete';
+            deleteButton.onclick = function () {
+                removeTask(task.id);
+            };
+            taskButtons.appendChild(deleteButton);
+
+            listItem.appendChild(taskText);
+            listItem.appendChild(taskButtons);
+
+            taskList.appendChild(listItem);
+        });
+    }
+
+    function getTasks() {
+        return JSON.parse(localStorage.getItem('tasks')) || [];
+    }
+
+    function loadTasks() {
+        renderTasks();
+    }
+</script>
+
+</body>
+</html>
